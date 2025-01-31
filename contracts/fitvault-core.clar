@@ -3,7 +3,7 @@
 ;; Constants
 (define-constant contract-owner tx-sender)
 (define-constant err-not-authorized (err u100))
-(define-constant err-invalid-workout (err u101))
+(define-constant err-invalid-workout (err u101))  
 (define-constant err-session-full (err u102))
 
 ;; Data structures
@@ -12,7 +12,7 @@
   {
     creator: principal,
     name: (string-utf8 64),
-    description: (string-utf8 256),
+    description: (string-utf8 256), 
     duration: uint,
     max-participants: uint
   }
@@ -54,7 +54,8 @@
 )
 
 (define-public (create-session (workout-id uint) (start-time uint))
-  (let ((session-id (var-get next-session-id)))
+  (let ((session-id (var-get next-session-id))
+        (workout (unwrap! (map-get? workouts { workout-id: workout-id }) (err err-invalid-workout))))
     (map-set workout-sessions
       { session-id: session-id }
       {
@@ -70,7 +71,11 @@
 )
 
 (define-public (join-session (session-id uint))
-  (let ((session (unwrap! (map-get? workout-sessions { session-id: session-id }) (err err-invalid-workout))))
-    (ok true)
+  (let ((session (unwrap! (map-get? workout-sessions { session-id: session-id }) (err err-invalid-workout)))
+        (workout (unwrap! (map-get? workouts { workout-id: (get workout-id session) }) (err err-invalid-workout))))
+    (asserts! (< (len (get participants session)) (get max-participants workout)) (err err-session-full))
+    (ok (map-set workout-sessions
+      { session-id: session-id }
+      (merge session { participants: (append (get participants session) tx-sender) })))
   )
 )
