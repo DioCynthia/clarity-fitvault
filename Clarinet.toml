@@ -8,6 +8,10 @@ requirements = []
 path = "contracts/fitvault-core.clar"
 depends_on = []
 
+[contracts.fitvault-rewards]
+path = "contracts/fitvault-rewards.clar"
+depends_on = []
+
 [repl]
 costs_version = 2
 parser_version = 2
