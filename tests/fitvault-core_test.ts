@@ -33,7 +33,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-  name: "Ensure user can create and join session with participant limit",
+  name: "Ensure user can create and join session with proper validation",
   async fn(chain: Chain, accounts: Map<string, Account>) {
     const wallet1 = accounts.get("wallet_1")!;
     const wallet2 = accounts.get("wallet_2")!;
@@ -48,15 +48,17 @@ Clarinet.test({
       )
     ]);
 
-    // Create session
+    // Create session with future time
+    const futureTime = 1234567890;
     block = chain.mineBlock([
       Tx.contractCall(
         "fitvault-core",
         "create-session",
-        [types.uint(1), types.uint(1234567)],
+        [types.uint(1), types.uint(futureTime)],
         wallet1.address
       )
     ]);
+    assertEquals(block.receipts[0].result.startsWith("(ok"), true);
 
     // Second user joins session
     block = chain.mineBlock([
@@ -69,6 +71,17 @@ Clarinet.test({
     ]);
     assertEquals(block.receipts[0].result, "(ok true)");
 
+    // Second user attempts to join again
+    block = chain.mineBlock([
+      Tx.contractCall(
+        "fitvault-core",
+        "join-session",
+        [types.uint(1)],
+        wallet2.address
+      )
+    ]);
+    assertEquals(block.receipts[0].result, "(err u104)");
+
     // Third user attempts to join full session
     block = chain.mineBlock([
       Tx.contractCall(
@@ -78,6 +91,6 @@ Clarinet.test({
         accounts.get("wallet_3")!.address
       )
     ]);
-    assertEquals(block.receipts[0].result, `(err u102)`);
+    assertEquals(block.receipts[0].result, "(err u102)");
   }
 });
